@@ -1,62 +1,83 @@
 #ifndef NAV2_RRTSTAR_PLANNER__RRT_STAR_PLANNER_HPP_
 #define NAV2_RRTSTAR_PLANNER__RRT_STAR_PLANNER_HPP_
 
-#include <string>
 #include <memory>
+#include <string>
 
-#include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/point.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
+#include "rclcpp/rclcpp.hpp"
 
 #include "nav2_core/global_planner.hpp"
-#include "nav_msgs/msg/path.hpp"
-#include "nav2_util/robot_utils.hpp"
-#include "nav2_util/lifecycle_node.hpp"
 #include "nav2_costmap_2d/costmap_2d_ros.hpp"
+#include "nav2_util/lifecycle_node.hpp"
+#include "nav2_util/robot_utils.hpp"
+#include "nav_msgs/msg/path.hpp"
 
-namespace nav2_RRTstar_planner
-{
+struct Point {
+    Point(float x, float y)
+        :x{x}, y{y} {}
 
-class RRTstar : public nav2_core::GlobalPlanner
-{
+    float x;
+    float y;
+};
+
+namespace nav2_RRTstar_planner {
+
+class RRTstar : public nav2_core::GlobalPlanner {
 public:
-  RRTstar() = default;
-  ~RRTstar() = default;
+    RRTstar() = default;
+    ~RRTstar() = default;
 
-  // plugin configure
-  void configure(
-    const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
-    std::string name, std::shared_ptr<tf2_ros::Buffer> tf,
-    std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros) override;
+    // plugin configure
+    void configure(
+        const rclcpp_lifecycle::LifecycleNode::WeakPtr& parent,
+        std::string name,
+        std::shared_ptr<tf2_ros::Buffer> tf,
+        std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros) override;
 
-  // plugin cleanup
-  void cleanup() override;
+    // plugin cleanup
+    void cleanup() override;
 
-  // plugin activate
-  void activate() override;
+    // plugin activate
+    void activate() override;
 
-  // plugin deactivate
-  void deactivate() override;
+    // plugin deactivate
+    void deactivate() override;
 
-  // This method creates path for given start and goal pose.
-  nav_msgs::msg::Path createPlan(
-    const geometry_msgs::msg::PoseStamped & start,
-    const geometry_msgs::msg::PoseStamped & goal) override;
+    // This method creates path for given start and goal pose.
+    nav_msgs::msg::Path createPlan(
+        const geometry_msgs::msg::PoseStamped& start,
+        const geometry_msgs::msg::PoseStamped& goal) override;
 
 private:
-  // TF buffer
-  std::shared_ptr<tf2_ros::Buffer> tf_;
+    // Checks if connection between points is valid
+    bool is_valid(Point a, Point b);
 
-  // node ptr
-  nav2_util::LifecycleNode::SharedPtr node_;
+    // Returns random point
+    Point get_random_point();
 
-  // Global Costmap
-  nav2_costmap_2d::Costmap2D * costmap_;
+    // Returns the closest point to given pos
+    Point find_closest(Point pos);
 
-  // The global frame of the costmap
-  std::string global_frame_, name_;
+    // Returns new point on the segment connecting pt and closest
+    Point new_point(Point pt, Point closest);
 
-  double interpolation_resolution_;
+    std::vector<float> linspace(float start, float stop, std::size_t num_of_points);
+
+    // TF buffer
+    std::shared_ptr<tf2_ros::Buffer> tf_;
+
+    // node ptr
+    nav2_util::LifecycleNode::SharedPtr node_;
+
+    // Global Costmap
+    nav2_costmap_2d::Costmap2D* costmap_;
+
+    // The global frame of the costmap
+    std::string global_frame_, name_;
+
+    double interpolation_resolution_;
 };
 
 }  // namespace nav2_RRTstar_planner
