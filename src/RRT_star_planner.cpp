@@ -1,8 +1,8 @@
 #include <cmath>
+#include <cstdlib>
 #include <memory>
 #include <random>
 #include <string>
-#include <cstdlib>
 #include "nav2_util/node_utils.hpp"
 
 #include "nav2_RRTstar_planner/RRT_star_planner.hpp"
@@ -14,7 +14,6 @@ void RRTstar::configure(
     std::string name,
     std::shared_ptr<tf2_ros::Buffer> tf,
     std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros) {
-
     // Seed for random numbers comment if not debugging
     std::srand(444);
 
@@ -75,8 +74,8 @@ nav_msgs::msg::Path RRTstar::createPlan(
     auto random_pt = get_random_point();
     is_valid(Point(goal.pose.position.x, goal.pose.position.y), Point(start.pose.position.x, start.pose.position.y));
     RCLCPP_INFO(
-            node_->get_logger(), "x: %f, y: %f ",
-            random_pt.x, random_pt.y);
+        node_->get_logger(), "x: %f, y: %f ",
+        random_pt.x, random_pt.y);
 
     // calculating the number of loops for current value of interpolation_resolution_
     int total_number_of_loop = std::hypot(
@@ -140,7 +139,6 @@ bool RRTstar::is_valid(Point a, Point b) {
 }
 
 Point RRTstar::get_random_point() {
-
     float x = (std::rand() / (float)RAND_MAX) * costmap_->getSizeInMetersX();
     float y = (std::rand() / (float)RAND_MAX) * costmap_->getSizeInMetersY();
 
@@ -148,14 +146,24 @@ Point RRTstar::get_random_point() {
 }
 
 std::vector<float> RRTstar::linspace(float start, float stop, std::size_t num_of_points) {
-    std::vector<float> ret{};
-    auto step = (stop - start) / num_of_points;
+    std::vector<float> linspaced{};
+    linspaced.reserve(num_of_points);
 
-    for (float num = 0; num < stop; num += step) {
-        ret.push_back(num);
+    if (num_of_points == 0) {
+        return linspaced;
+    } else if (num_of_points == 1) {
+        linspaced.push_back(start);
+        return linspaced;
     }
 
-    return ret;
+    auto delta = (stop - start) / (num_of_points - 1);
+
+    for (int i = 0; i < num_of_points - 1; ++i) {
+        linspaced.push_back(start + delta * i);
+    }
+    linspaced.push_back(stop);
+
+    return linspaced;
 }
 
 }  // namespace nav2_RRTstar_planner
