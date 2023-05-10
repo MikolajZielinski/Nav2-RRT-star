@@ -1,12 +1,11 @@
 #ifndef NAV2_RRTSTAR_PLANNER__RRT_STAR_PLANNER_HPP_
 #define NAV2_RRTSTAR_PLANNER__RRT_STAR_PLANNER_HPP_
 
+#include <limits>
+#include <map>
 #include <memory>
-#include <string>
 #include <random>
 #include <string>
-#include <map>
-#include <limits>
 
 #include "geometry_msgs/msg/point.hpp"
 #include "geometry_msgs/msg/pose_stamped.hpp"
@@ -19,8 +18,18 @@
 #include "nav_msgs/msg/path.hpp"
 
 struct Point {
+    Point()
+        : x{0.0}, y{0.0} {}
     Point(float x, float y)
-        :x{x}, y{y} {}
+        : x{x}, y{y} {}
+
+    bool operator<(const Point& other) const {
+        if (x != other.x) {
+            return x < other.x;
+        }
+
+        return y < other.y;
+    }
 
     float x;
     float y;

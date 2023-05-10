@@ -69,7 +69,8 @@ nav_msgs::msg::Path RRTstar::createPlan(
     global_path.header.stamp = node_->now();
     global_path.header.frame_id = global_frame_;
 
-    std::map<Point, std::shared_ptr<Point>> parent{{Point(start.pose.position.x, start.pose.position.y), std::shared_ptr<Point>()}};
+    std::map<Point, std::shared_ptr<Point>> parent;
+    parent[Point{4.0, 5.0}] = std::shared_ptr<Point>{new Point{3.0, 4.0}};
 
     auto random_pt = get_random_point();
     is_valid(Point(start.pose.position.x, start.pose.position.y), Point(goal.pose.position.x, goal.pose.position.y));
