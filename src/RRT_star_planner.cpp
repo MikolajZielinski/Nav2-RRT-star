@@ -2,6 +2,7 @@
 #include <memory>
 #include <random>
 #include <string>
+#include <cstdlib>
 #include "nav2_util/node_utils.hpp"
 
 #include "nav2_RRTstar_planner/RRT_star_planner.hpp"
@@ -13,6 +14,10 @@ void RRTstar::configure(
     std::string name,
     std::shared_ptr<tf2_ros::Buffer> tf,
     std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros) {
+
+    // Seed for random numbers comment if not debugging
+    std::srand(444);
+
     node_ = parent.lock();
     name_ = name;
     tf_ = tf;
@@ -68,7 +73,10 @@ nav_msgs::msg::Path RRTstar::createPlan(
     global_path.header.frame_id = global_frame_;
 
     auto random_pt = get_random_point();
-    std::cout << random_pt.x << " " << random_pt.y << '\n';
+    is_valid(Point(goal.pose.position.x, goal.pose.position.y), Point(start.pose.position.x, start.pose.position.y));
+    RCLCPP_INFO(
+            node_->get_logger(), "x: %f, y: %f ",
+            random_pt.x, random_pt.y);
 
     // calculating the number of loops for current value of interpolation_resolution_
     int total_number_of_loop = std::hypot(
@@ -119,8 +127,12 @@ bool RRTstar::is_valid(Point a, Point b) {
             return false;
         }
 
+        RCLCPP_INFO(
+            node_->get_logger(), "Cost: %d ",
+            costmap_->getCost(mx, my));
+
         if (costmap_->getCost(mx, my) >= 50) {
-            return false;
+            // return false;
         }
     }
 
@@ -128,10 +140,9 @@ bool RRTstar::is_valid(Point a, Point b) {
 }
 
 Point RRTstar::get_random_point() {
-    std::srand(444);
 
-    float x = std::rand() * costmap_->getSizeInMetersX();
-    float y = std::rand() * costmap_->getSizeInMetersY();
+    float x = (std::rand() / (float)RAND_MAX) * costmap_->getSizeInMetersX();
+    float y = (std::rand() / (float)RAND_MAX) * costmap_->getSizeInMetersY();
 
     return {x, y};
 }
