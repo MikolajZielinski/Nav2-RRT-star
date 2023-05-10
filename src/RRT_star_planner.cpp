@@ -1,8 +1,6 @@
 #include <cmath>
 #include <cstdlib>
 #include <memory>
-#include <random>
-#include <string>
 #include "nav2_util/node_utils.hpp"
 
 #include "nav2_RRTstar_planner/RRT_star_planner.hpp"
@@ -71,11 +69,13 @@ nav_msgs::msg::Path RRTstar::createPlan(
     global_path.header.stamp = node_->now();
     global_path.header.frame_id = global_frame_;
 
+    std::map<Point, std::shared_ptr<Point>> parent{{Point(start.pose.position.x, start.pose.position.y), std::shared_ptr<Point>()}};
+
     auto random_pt = get_random_point();
-    is_valid(Point(goal.pose.position.x, goal.pose.position.y), Point(start.pose.position.x, start.pose.position.y));
+    is_valid(Point(start.pose.position.x, start.pose.position.y), Point(goal.pose.position.x, goal.pose.position.y));
     RCLCPP_INFO(
-        node_->get_logger(), "x: %f, y: %f ",
-        random_pt.x, random_pt.y);
+        node_->get_logger(), "x_start:%f y_start:%f x_end:%f y_end:%f ",
+        goal.pose.position.x, goal.pose.position.y, start.pose.position.x, start.pose.position.y);
 
     // calculating the number of loops for current value of interpolation_resolution_
     int total_number_of_loop = std::hypot(
@@ -127,11 +127,12 @@ bool RRTstar::is_valid(Point a, Point b) {
         }
 
         RCLCPP_INFO(
-            node_->get_logger(), "Cost: %d ",
-            costmap_->getCost(mx, my));
+            node_->get_logger(), "x:%f y:%f cost: %d ",
+            point.x, point.y, costmap_->getCost(mx, my));
 
-        if (costmap_->getCost(mx, my) >= 50) {
-            // return false;
+        if (costmap_->getCost(mx, my) >= 200) {
+            //TODO Add last point before collision
+            return false;
         }
     }
 
@@ -143,6 +144,14 @@ Point RRTstar::get_random_point() {
     float y = (std::rand() / (float)RAND_MAX) * costmap_->getSizeInMetersY();
 
     return {x, y};
+}
+
+Point RRTstar::find_closest(Point pos){
+
+    float min_dist = std::numeric_limits<float>::infinity();
+
+    Point closest = Point(0.0, 0.0);
+
 }
 
 std::vector<float> RRTstar::linspace(float start, float stop, std::size_t num_of_points) {
