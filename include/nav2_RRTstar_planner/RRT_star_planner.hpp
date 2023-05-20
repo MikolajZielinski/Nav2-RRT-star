@@ -31,6 +31,10 @@ struct Point {
         return y < other.y;
     }
 
+    bool operator!=(const Point& other) const {
+        return x != other.x || y != other.y;
+    }
+
     double x;
     double y;
 };

@@ -71,6 +71,7 @@ nav_msgs::msg::Path RRTstar::createPlan(
 
     //----------------------------------------- Path planning algorithm implementation ----------------------------------------------------
     
+    // Plan path
     parent_.clear();
     parent_[Point{start.pose.position.x, start.pose.position.y}] = std::shared_ptr<Point>{};
 
@@ -88,11 +89,26 @@ nav_msgs::msg::Path RRTstar::createPlan(
             }
         }
     }
-    // is_valid(Point(start.pose.position.x, start.pose.position.y), Point(goal.pose.position.x, goal.pose.position.y));
 
-    // RCLCPP_INFO(
-    //     node_->get_logger(), "x_start:%f y_start:%f x_end:%f y_end:%f ",
-    //     new_pt.x, new_pt.y, start.pose.position.x, start.pose.position.y);
+    // Retrive path
+    std::vector<Point> path;
+    path.push_back(Point(goal.pose.position.x, goal.pose.position.y));
+
+    while(path.back() != Point(start.pose.position.x, start.pose.position.y)){
+        path.push_back(*parent_[path.back()]);
+    }
+    // path = [self.end]
+    //     while path[-1] != self.start:
+    //         path.append(self.parent[path[-1]])
+
+
+    RCLCPP_INFO(
+        node_->get_logger(), "x_start:%f y_start:%f x_end:%f y_end:%f ",
+        start.pose.position.x, start.pose.position.y, goal.pose.position.x, goal.pose.position.y);
+
+    RCLCPP_INFO(
+        node_->get_logger(), "### x_start:%f y_start:%f x_end:%f y_end:%f ",
+        path.front().x, path.front().y, path.back().x, path.back().y);
 
     //-------------------------------------------------------------------------------------------------------------------------------------
 
