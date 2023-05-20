@@ -74,13 +74,25 @@ nav_msgs::msg::Path RRTstar::createPlan(
     parent_.clear();
     parent_[Point{start.pose.position.x, start.pose.position.y}] = std::shared_ptr<Point>{};
 
-    auto random_pt = get_random_point();
-    Point closest_point = find_closest(random_pt);
+    while(true){
+        auto random_pt = get_random_point();
+        Point closest_pt = find_closest(random_pt);
+        Point new_pt = new_point(random_pt, closest_pt);
+
+        if(is_valid(closest_pt, new_pt)){
+            parent_[new_pt] = std::make_shared<Point>(closest_pt);
+
+            if(is_valid(new_pt, Point(goal.pose.position.x, goal.pose.position.y))){
+                parent_[Point(goal.pose.position.x, goal.pose.position.y)] = std::make_shared<Point>(new_pt);
+                break;
+            }
+        }
+    }
     // is_valid(Point(start.pose.position.x, start.pose.position.y), Point(goal.pose.position.x, goal.pose.position.y));
 
-    RCLCPP_INFO(
-        node_->get_logger(), "x_start:%f y_start:%f x_end:%f y_end:%f ",
-        closest_point.x, closest_point.y, start.pose.position.x, start.pose.position.y);
+    // RCLCPP_INFO(
+    //     node_->get_logger(), "x_start:%f y_start:%f x_end:%f y_end:%f ",
+    //     new_pt.x, new_pt.y, start.pose.position.x, start.pose.position.y);
 
     //-------------------------------------------------------------------------------------------------------------------------------------
 
@@ -133,9 +145,9 @@ bool RRTstar::is_valid(Point a, Point b) {
             return false;
         }
 
-        RCLCPP_INFO(
-            node_->get_logger(), "x:%f y:%f cost: %d ",
-            point.x, point.y, costmap_->getCost(mx, my));
+        // RCLCPP_INFO(
+        //     node_->get_logger(), "x:%f y:%f cost: %d ",
+        //     point.x, point.y, costmap_->getCost(mx, my));
 
         if (costmap_->getCost(mx, my) >= 200) {
             //TODO Add last point before collision
@@ -160,8 +172,6 @@ Point RRTstar::find_closest(Point pos){
 
     for(auto& [key, value]: parent_)
     {
-        RCLCPP_INFO(
-            node_->get_logger(), "OK");
         double dist = std::sqrt(std::pow((pos.x - key.x), 2) + std::pow((pos.y, key.y), 2));
 
         if(dist < min_dist)
@@ -173,6 +183,20 @@ Point RRTstar::find_closest(Point pos){
 
     return closest;
 }
+
+Point RRTstar::new_point(Point pt, Point closest){
+
+    double step = 0.1;
+
+    double norm = std::hypot(pt.x - closest.x, pt.y - closest.y);
+    double new_x = ((pt.x - closest.x) / norm) * step;
+    double new_y = ((pt.y - closest.y) / norm) * step;
+
+    Point point = Point(closest.x + new_x, closest.y + new_y);
+
+    return point;
+}
+
 
 std::vector<float> RRTstar::linspace(float start, float stop, std::size_t num_of_points) {
     std::vector<float> linspaced{};
