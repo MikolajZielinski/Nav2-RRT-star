@@ -69,14 +69,20 @@ nav_msgs::msg::Path RRTstar::createPlan(
     global_path.header.stamp = node_->now();
     global_path.header.frame_id = global_frame_;
 
-    std::map<Point, std::shared_ptr<Point>> parent;
-    parent[Point{4.0, 5.0}] = std::shared_ptr<Point>{new Point{3.0, 4.0}};
+    //----------------------------------------- Path planning algorithm implementation ----------------------------------------------------
+    
+    parent_.clear();
+    parent_[Point{start.pose.position.x, start.pose.position.y}] = std::shared_ptr<Point>{};
 
     auto random_pt = get_random_point();
-    is_valid(Point(start.pose.position.x, start.pose.position.y), Point(goal.pose.position.x, goal.pose.position.y));
+    Point closest_point = find_closest(random_pt);
+    // is_valid(Point(start.pose.position.x, start.pose.position.y), Point(goal.pose.position.x, goal.pose.position.y));
+
     RCLCPP_INFO(
         node_->get_logger(), "x_start:%f y_start:%f x_end:%f y_end:%f ",
-        goal.pose.position.x, goal.pose.position.y, start.pose.position.x, start.pose.position.y);
+        closest_point.x, closest_point.y, start.pose.position.x, start.pose.position.y);
+
+    //-------------------------------------------------------------------------------------------------------------------------------------
 
     // calculating the number of loops for current value of interpolation_resolution_
     int total_number_of_loop = std::hypot(
@@ -150,9 +156,22 @@ Point RRTstar::get_random_point() {
 Point RRTstar::find_closest(Point pos){
 
     float min_dist = std::numeric_limits<float>::infinity();
+    Point closest;
 
-    Point closest = Point(0.0, 0.0);
+    for(auto& [key, value]: parent_)
+    {
+        RCLCPP_INFO(
+            node_->get_logger(), "OK");
+        double dist = std::sqrt(std::pow((pos.x - key.x), 2) + std::pow((pos.y, key.y), 2));
 
+        if(dist < min_dist)
+        {
+            min_dist = dist;
+            closest = key;
+        }
+    }
+
+    return closest;
 }
 
 std::vector<float> RRTstar::linspace(float start, float stop, std::size_t num_of_points) {

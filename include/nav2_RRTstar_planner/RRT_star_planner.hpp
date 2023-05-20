@@ -20,7 +20,7 @@
 struct Point {
     Point()
         : x{0.0}, y{0.0} {}
-    Point(float x, float y)
+    Point(double x, double y)
         : x{x}, y{y} {}
 
     bool operator<(const Point& other) const {
@@ -31,8 +31,8 @@ struct Point {
         return y < other.y;
     }
 
-    float x;
-    float y;
+    double x;
+    double y;
 };
 
 namespace nav2_RRTstar_planner {
@@ -89,6 +89,9 @@ private:
 
     // The global frame of the costmap
     std::string global_frame_, name_;
+
+    // Path points
+    std::map<Point, std::shared_ptr<Point>> parent_;
 
     double interpolation_resolution_;
 };
