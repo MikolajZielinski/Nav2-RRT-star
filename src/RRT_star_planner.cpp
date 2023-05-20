@@ -97,10 +97,8 @@ nav_msgs::msg::Path RRTstar::createPlan(
     while(path.back() != Point(start.pose.position.x, start.pose.position.y)){
         path.push_back(*parent_[path.back()]);
     }
-    // path = [self.end]
-    //     while path[-1] != self.start:
-    //         path.append(self.parent[path[-1]])
 
+    std::reverse(path.begin(), path.end());
 
     RCLCPP_INFO(
         node_->get_logger(), "x_start:%f y_start:%f x_end:%f y_end:%f ",
@@ -112,18 +110,10 @@ nav_msgs::msg::Path RRTstar::createPlan(
 
     //-------------------------------------------------------------------------------------------------------------------------------------
 
-    // calculating the number of loops for current value of interpolation_resolution_
-    int total_number_of_loop = std::hypot(
-                                   goal.pose.position.x - start.pose.position.x,
-                                   goal.pose.position.y - start.pose.position.y) /
-                               interpolation_resolution_;
-    double x_increment = (goal.pose.position.x - start.pose.position.x) / total_number_of_loop;
-    double y_increment = (goal.pose.position.y - start.pose.position.y) / total_number_of_loop;
-
-    for (int i = 0; i < total_number_of_loop; ++i) {
+    for (auto& point: path) {
         geometry_msgs::msg::PoseStamped pose;
-        pose.pose.position.x = start.pose.position.x + x_increment * i;
-        pose.pose.position.y = start.pose.position.y + y_increment * i;
+        pose.pose.position.x = point.x;
+        pose.pose.position.y = point.y;
         pose.pose.position.z = 0.0;
         pose.pose.orientation.x = 0.0;
         pose.pose.orientation.y = 0.0;
@@ -134,10 +124,10 @@ nav_msgs::msg::Path RRTstar::createPlan(
         global_path.poses.push_back(pose);
     }
 
-    geometry_msgs::msg::PoseStamped goal_pose = goal;
-    goal_pose.header.stamp = node_->now();
-    goal_pose.header.frame_id = global_frame_;
-    global_path.poses.push_back(goal_pose);
+    // geometry_msgs::msg::PoseStamped goal_pose = goal;
+    // goal_pose.header.stamp = node_->now();
+    // goal_pose.header.frame_id = global_frame_;
+    // global_path.poses.push_back(goal_pose);
 
     return global_path;
 }
