@@ -90,6 +90,10 @@ nav_msgs::msg::Path RRTstar::createPlan(
         }
     }
 
+    RCLCPP_INFO(
+        node_->get_logger(), "-------------------------> Path size: %ld",
+        parent_.size());
+
     // Retrive path
     std::vector<Point> path;
     path.push_back(Point(goal.pose.position.x, goal.pose.position.y));
@@ -155,8 +159,11 @@ bool RRTstar::is_valid(Point a, Point b) {
         //     node_->get_logger(), "x:%f y:%f cost: %d ",
         //     point.x, point.y, costmap_->getCost(mx, my));
 
-        if (costmap_->getCost(mx, my) >= 200) {
+        if (costmap_->getCost(mx, my) >= 128) {
             //TODO Add last point before collision
+            // RCLCPP_INFO(
+            // node_->get_logger(), "x:%f y:%f cost: %d ",
+            // point.x, point.y, costmap_->getCost(mx, my));
             return false;
         }
     }
@@ -165,8 +172,8 @@ bool RRTstar::is_valid(Point a, Point b) {
 }
 
 Point RRTstar::get_random_point() {
-    float x = (std::rand() / (float)RAND_MAX) * costmap_->getSizeInMetersX();
-    float y = (std::rand() / (float)RAND_MAX) * costmap_->getSizeInMetersY();
+    float x = (((std::rand() / (float)RAND_MAX) * 2) - 1) * costmap_->getSizeInMetersX();
+    float y = (((std::rand() / (float)RAND_MAX) * 2) - 1) * costmap_->getSizeInMetersY();
 
     return {x, y};
 }
