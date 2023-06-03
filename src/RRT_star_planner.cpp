@@ -89,7 +89,7 @@ nav_msgs::msg::Path RRTstar::createPlan(
                     double dist = std::sqrt(std::pow((new_pt.x - key.x), 2) + std::pow((new_pt.y, key.y), 2));
                     auto new_cost = key.cost + dist;
 
-                    if (dist < 1.0 && new_cost < new_pt.cost) {
+                    if (dist < 5.0 && new_cost < new_pt.cost) {
                         closest_pt = key;
                         new_pt.cost = new_cost;
                     }
@@ -98,6 +98,20 @@ nav_msgs::msg::Path RRTstar::createPlan(
 
             if(is_valid(closest_pt, new_pt)){
                 parent_[new_pt] = std::make_shared<Point>(closest_pt);
+
+                for(auto& [key, value]: parent_) {
+                    if (is_valid(new_pt, key)) {
+                        double dist = std::sqrt(std::pow((new_pt.x - key.x), 2) + std::pow((new_pt.y, key.y), 2));
+                        auto new_cost = new_pt.cost + dist;
+
+                        if (dist < 5.0 && new_cost < key.cost) {
+                            auto nodeHandler = parent_.extract(key);
+                            nodeHandler.key() = Point{key.x, key.y, new_cost};
+                            parent_.insert(std::move(nodeHandler));
+                            parent_[key] = std::make_shared<Point>(new_pt);
+                        }
+                    }
+                }
 
                 if(is_valid(new_pt, Point(goal.pose.position.x, goal.pose.position.y))){
                     auto dist_to_goal = std::hypot(new_pt.x - goal.pose.position.x, new_pt.y - goal.pose.position.y);
