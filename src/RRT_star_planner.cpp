@@ -75,17 +75,21 @@ nav_msgs::msg::Path RRTstar::createPlan(
     parent_.clear();
     parent_[Point{start.pose.position.x, start.pose.position.y}] = std::shared_ptr<Point>{};
 
-    while(true){
-        auto random_pt = get_random_point();
-        Point closest_pt = find_closest(random_pt);
-        Point new_pt = new_point(random_pt, closest_pt);
+    if(is_valid(Point{start.pose.position.x, start.pose.position.y}, Point(goal.pose.position.x, goal.pose.position.y))){
+        parent_[Point(goal.pose.position.x, goal.pose.position.y)] = std::make_shared<Point>(Point{start.pose.position.x, start.pose.position.y});
+    } else {
+        while(true){
+            auto random_pt = get_random_point();
+            Point closest_pt = find_closest(random_pt);
+            Point new_pt = new_point(random_pt, closest_pt);
 
-        if(is_valid(closest_pt, new_pt)){
-            parent_[new_pt] = std::make_shared<Point>(closest_pt);
+            if(is_valid(closest_pt, new_pt)){
+                parent_[new_pt] = std::make_shared<Point>(closest_pt);
 
-            if(is_valid(new_pt, Point(goal.pose.position.x, goal.pose.position.y))){
-                parent_[Point(goal.pose.position.x, goal.pose.position.y)] = std::make_shared<Point>(new_pt);
-                break;
+                if(is_valid(new_pt, Point(goal.pose.position.x, goal.pose.position.y))){
+                    parent_[Point(goal.pose.position.x, goal.pose.position.y)] = std::make_shared<Point>(new_pt);
+                    break;
+                }
             }
         }
     }
