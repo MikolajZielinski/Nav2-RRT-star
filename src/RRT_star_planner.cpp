@@ -73,6 +73,7 @@ nav_msgs::msg::Path RRTstar::createPlan(
     
     // Plan path
     parent_.clear();
+    auto start_pt = Point{start.pose.position.x, start.pose.position.y};
     parent_[Point{start.pose.position.x, start.pose.position.y}] = std::shared_ptr<Point>{};
 
     if(is_valid(Point{start.pose.position.x, start.pose.position.y}, Point(goal.pose.position.x, goal.pose.position.y))){
@@ -82,16 +83,16 @@ nav_msgs::msg::Path RRTstar::createPlan(
             auto random_pt = get_random_point();
             Point closest_pt = find_closest(random_pt);
             Point new_pt = new_point(random_pt, closest_pt);
-            new_pt.cost = closest_pt.cost + 0.1;
+            double best_cost = calc_cost(start_pt, closest_pt) + 0.1;
 
             for(auto& [key, value]: parent_) {
                 if (is_valid(key, new_pt)) {
                     double dist = std::sqrt(std::pow((new_pt.x - key.x), 2) + std::pow((new_pt.y, key.y), 2));
-                    auto new_cost = key.cost + dist;
+                    auto new_cost = calc_cost(start_pt, key) + dist;
 
-                    if (dist < 1.0 && new_cost < new_pt.cost) {
+                    if (dist < 1.0 && new_cost < best_cost) {
                         closest_pt = key;
-                        new_pt.cost = new_cost;
+                        best_cost = new_cost;
                     }
                 }
             }
@@ -102,9 +103,9 @@ nav_msgs::msg::Path RRTstar::createPlan(
                 for(auto& [key, value]: parent_) {
                     if (is_valid(new_pt, key)) {
                         double dist = std::sqrt(std::pow((new_pt.x - key.x), 2) + std::pow((new_pt.y, key.y), 2));
-                        auto new_cost = new_pt.cost + dist;
+                        auto new_cost = calc_cost(start_pt, new_pt) + dist;
 
-                        if (dist < 5.0 && new_cost < key.cost) {
+                        if (dist < 5.0 && new_cost < calc_cost(start_pt, key)) {
                             auto nodeHandler = parent_.extract(key);
                             nodeHandler.key() = Point{key.x, key.y, new_cost};
                             parent_.insert(std::move(nodeHandler));
@@ -264,6 +265,22 @@ std::vector<float> RRTstar::linspace(float start, float stop, std::size_t num_of
     linspaced.push_back(stop);
 
     return linspaced;
+}
+
+double RRTstar::calc_cost(Point start_pt, Point point) {
+    std::vector<Point> path;
+    path.push_back(point);
+
+    while(path.back() != start_pt){
+        path.push_back(*parent_[path.back()]);
+    }
+
+    double cost{};
+    for (std::size_t i = 1; i < path.size(); i++) {
+        cost += std::hypot(path[i - 1].x - path[i].x, path[i - 1].y - path[i].y);
+    }
+
+    return cost;
 }
 
 }  // namespace nav2_RRTstar_planner

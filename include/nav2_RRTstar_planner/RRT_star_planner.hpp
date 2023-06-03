@@ -101,6 +101,8 @@ private:
     std::map<Point, std::shared_ptr<Point>> parent_;
 
     double interpolation_resolution_;
+
+    double calc_cost(Point start_pt, Point point);
 };
 
 }  // namespace nav2_RRTstar_planner
