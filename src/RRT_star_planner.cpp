@@ -82,12 +82,16 @@ nav_msgs::msg::Path RRTstar::createPlan(
             auto random_pt = get_random_point();
             Point closest_pt = find_closest(random_pt);
             Point new_pt = new_point(random_pt, closest_pt);
+            new_pt.cost = closest_pt.cost + 0.1;
 
             if(is_valid(closest_pt, new_pt)){
                 parent_[new_pt] = std::make_shared<Point>(closest_pt);
 
                 if(is_valid(new_pt, Point(goal.pose.position.x, goal.pose.position.y))){
-                    parent_[Point(goal.pose.position.x, goal.pose.position.y)] = std::make_shared<Point>(new_pt);
+                    auto dist_to_goal = std::hypot(new_pt.x - goal.pose.position.x, new_pt.y - goal.pose.position.y);
+                    auto goal_point = Point(goal.pose.position.x, goal.pose.position.y, dist_to_goal + new_pt.cost);
+                    parent_[goal_point] = std::make_shared<Point>(new_pt);
+                    RCLCPP_INFO(node_->get_logger(), "Final cost: %f", goal_point.cost);
                     break;
                 }
             }

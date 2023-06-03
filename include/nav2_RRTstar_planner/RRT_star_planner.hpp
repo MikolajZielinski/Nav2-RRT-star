@@ -22,6 +22,8 @@ struct Point {
         : x{0.0}, y{0.0} {}
     Point(double x, double y)
         : x{x}, y{y} {}
+    Point(double x, double y, double cost)
+        : x{x}, y{y}, cost{cost} {}
 
     bool operator<(const Point& other) const {
         if (x != other.x) {
@@ -37,6 +39,7 @@ struct Point {
 
     double x;
     double y;
+    double cost{};
 };
 
 namespace nav2_RRTstar_planner {
