@@ -89,7 +89,7 @@ nav_msgs::msg::Path RRTstar::createPlan(
                     double dist = std::sqrt(std::pow((new_pt.x - key.x), 2) + std::pow((new_pt.y, key.y), 2));
                     auto new_cost = key.cost + dist;
 
-                    if (dist < 5.0 && new_cost < new_pt.cost) {
+                    if (dist < 1.0 && new_cost < new_pt.cost) {
                         closest_pt = key;
                         new_pt.cost = new_cost;
                     }
