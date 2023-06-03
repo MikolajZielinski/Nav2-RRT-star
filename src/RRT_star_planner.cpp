@@ -84,6 +84,18 @@ nav_msgs::msg::Path RRTstar::createPlan(
             Point new_pt = new_point(random_pt, closest_pt);
             new_pt.cost = closest_pt.cost + 0.1;
 
+            for(auto& [key, value]: parent_) {
+                if (is_valid(key, new_pt)) {
+                    double dist = std::sqrt(std::pow((new_pt.x - key.x), 2) + std::pow((new_pt.y, key.y), 2));
+                    auto new_cost = key.cost + dist;
+
+                    if (dist < 1.0 && new_cost < new_pt.cost) {
+                        closest_pt = key;
+                        new_pt.cost = new_cost;
+                    }
+                }
+            }
+
             if(is_valid(closest_pt, new_pt)){
                 parent_[new_pt] = std::make_shared<Point>(closest_pt);
 
