@@ -80,7 +80,7 @@ nav_msgs::msg::Path RRTstar::createPlan(
         parent_[Point(goal.pose.position.x, goal.pose.position.y)] = std::make_shared<Point>(Point{start.pose.position.x, start.pose.position.y});
     } else {
         bool is_path_found = false;
-        int replaning_cycles_left = 100;
+        int replaning_cycles_left = 1000;
         while (true) {
             if (is_path_found) {
                 if (replaning_cycles_left == 0) {
@@ -131,11 +131,11 @@ nav_msgs::msg::Path RRTstar::createPlan(
                     is_path_found = true;
                 }
 
-                if (is_path_found) {
-                    auto goal_point = Point(goal.pose.position.x, goal.pose.position.y);
-                    auto final_cost = calc_cost(start_pt, goal_point);
-                    RCLCPP_INFO(node_->get_logger(), "Final cost: %f", final_cost);
-                }
+                // if (is_path_found) {
+                //     auto goal_point = Point(goal.pose.position.x, goal.pose.position.y);
+                //     auto final_cost = calc_cost(start_pt, goal_point);
+                //     RCLCPP_INFO(node_->get_logger(), "Final cost: %f", final_cost);
+                // }
             }
         }
     }
@@ -153,6 +153,7 @@ nav_msgs::msg::Path RRTstar::createPlan(
     }
 
     std::reverse(path.begin(), path.end());
+    path.pop_back();
 
     //-------------------------------------------------------------------------------------------------------------------------------------
 
@@ -170,10 +171,30 @@ nav_msgs::msg::Path RRTstar::createPlan(
         global_path.poses.push_back(pose);
     }
 
-    // geometry_msgs::msg::PoseStamped goal_pose = goal;
-    // goal_pose.header.stamp = node_->now();
-    // goal_pose.header.frame_id = global_frame_;
-    // global_path.poses.push_back(goal_pose);
+    int total_number_of_loop = std::hypot(
+    goal.pose.position.x - path.back().x,
+    goal.pose.position.y - path.back().y) / 0.1;
+    double x_increment = (goal.pose.position.x - path.back().x) / total_number_of_loop;
+    double y_increment = (goal.pose.position.y - path.back().y) / total_number_of_loop;
+
+    for (int i = 0; i < total_number_of_loop; ++i) {
+        geometry_msgs::msg::PoseStamped pose;
+        pose.pose.position.x = path.back().x + x_increment * i;
+        pose.pose.position.y = path.back().y + y_increment * i;
+        pose.pose.position.z = 0.0;
+        pose.pose.orientation.x = 0.0;
+        pose.pose.orientation.y = 0.0;
+        pose.pose.orientation.z = 0.0;
+        pose.pose.orientation.w = 1.0;
+        pose.header.stamp = node_->now();
+        pose.header.frame_id = global_frame_;
+        global_path.poses.push_back(pose);
+    }
+
+    geometry_msgs::msg::PoseStamped goal_pose = goal;
+    goal_pose.header.stamp = node_->now();
+    goal_pose.header.frame_id = global_frame_;
+    global_path.poses.push_back(goal_pose);
 
     return global_path;
 }
