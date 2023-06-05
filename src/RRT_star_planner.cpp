@@ -70,22 +70,32 @@ nav_msgs::msg::Path RRTstar::createPlan(
     global_path.header.frame_id = global_frame_;
 
     //----------------------------------------- Path planning algorithm implementation ----------------------------------------------------
-    
+
     // Plan path
     parent_.clear();
     auto start_pt = Point{start.pose.position.x, start.pose.position.y};
     parent_[Point{start.pose.position.x, start.pose.position.y}] = std::shared_ptr<Point>{};
 
-    if(is_valid(Point{start.pose.position.x, start.pose.position.y}, Point(goal.pose.position.x, goal.pose.position.y))){
+    if (is_valid(Point{start.pose.position.x, start.pose.position.y}, Point(goal.pose.position.x, goal.pose.position.y))) {
         parent_[Point(goal.pose.position.x, goal.pose.position.y)] = std::make_shared<Point>(Point{start.pose.position.x, start.pose.position.y});
     } else {
-        while(true){
+        bool is_path_found = false;
+        int replaning_cycles_left = 100;
+        while (true) {
+            if (is_path_found) {
+                if (replaning_cycles_left == 0) {
+                    break;
+                }
+
+                replaning_cycles_left--;
+            }
+
             auto random_pt = get_random_point();
             Point closest_pt = find_closest(random_pt);
             Point new_pt = new_point(random_pt, closest_pt);
             double best_cost = calc_cost(start_pt, closest_pt) + 0.1;
 
-            for(auto& [key, value]: parent_) {
+            for (auto& [key, value] : parent_) {
                 if (is_valid(key, new_pt)) {
                     double dist = std::sqrt(std::pow((new_pt.x - key.x), 2) + std::pow((new_pt.y, key.y), 2));
                     auto new_cost = calc_cost(start_pt, key) + dist;
@@ -97,10 +107,10 @@ nav_msgs::msg::Path RRTstar::createPlan(
                 }
             }
 
-            if(is_valid(closest_pt, new_pt)){
+            if (is_valid(closest_pt, new_pt)) {
                 parent_[new_pt] = std::make_shared<Point>(closest_pt);
 
-                for(auto& [key, value]: parent_) {
+                for (auto& [key, value] : parent_) {
                     if (is_valid(new_pt, key)) {
                         double dist = std::sqrt(std::pow((new_pt.x - key.x), 2) + std::pow((new_pt.y, key.y), 2));
                         auto new_cost = calc_cost(start_pt, new_pt) + dist;
@@ -114,12 +124,17 @@ nav_msgs::msg::Path RRTstar::createPlan(
                     }
                 }
 
-                if(is_valid(new_pt, Point(goal.pose.position.x, goal.pose.position.y))){
+                if (!is_path_found && is_valid(new_pt, Point(goal.pose.position.x, goal.pose.position.y))) {
                     auto dist_to_goal = std::hypot(new_pt.x - goal.pose.position.x, new_pt.y - goal.pose.position.y);
                     auto goal_point = Point(goal.pose.position.x, goal.pose.position.y, dist_to_goal + new_pt.cost);
                     parent_[goal_point] = std::make_shared<Point>(new_pt);
-                    RCLCPP_INFO(node_->get_logger(), "Final cost: %f", goal_point.cost);
-                    break;
+                    is_path_found = true;
+                }
+
+                if (is_path_found) {
+                    auto goal_point = Point(goal.pose.position.x, goal.pose.position.y);
+                    auto final_cost = calc_cost(start_pt, goal_point);
+                    RCLCPP_INFO(node_->get_logger(), "Final cost: %f", final_cost);
                 }
             }
         }
@@ -133,23 +148,15 @@ nav_msgs::msg::Path RRTstar::createPlan(
     std::vector<Point> path;
     path.push_back(Point(goal.pose.position.x, goal.pose.position.y));
 
-    while(path.back() != Point(start.pose.position.x, start.pose.position.y)){
+    while (path.back() != Point(start.pose.position.x, start.pose.position.y)) {
         path.push_back(*parent_[path.back()]);
     }
 
     std::reverse(path.begin(), path.end());
 
-    RCLCPP_INFO(
-        node_->get_logger(), "x_start:%f y_start:%f x_end:%f y_end:%f ",
-        start.pose.position.x, start.pose.position.y, goal.pose.position.x, goal.pose.position.y);
-
-    RCLCPP_INFO(
-        node_->get_logger(), "### x_start:%f y_start:%f x_end:%f y_end:%f ",
-        path.front().x, path.front().y, path.back().x, path.back().y);
-
     //-------------------------------------------------------------------------------------------------------------------------------------
 
-    for (auto& point: path) {
+    for (auto& point : path) {
         geometry_msgs::msg::PoseStamped pose;
         pose.pose.position.x = point.x;
         pose.pose.position.y = point.y;
@@ -195,10 +202,10 @@ bool RRTstar::is_valid(Point a, Point b) {
         //     point.x, point.y, costmap_->getCost(mx, my));
 
         if (costmap_->getCost(mx, my) >= 250) {
-            //TODO Add last point before collision
-            // RCLCPP_INFO(
-            // node_->get_logger(), "x:%f y:%f cost: %d ",
-            // point.x, point.y, costmap_->getCost(mx, my));
+            // TODO Add last point before collision
+            //  RCLCPP_INFO(
+            //  node_->get_logger(), "x:%f y:%f cost: %d ",
+            //  point.x, point.y, costmap_->getCost(mx, my));
             return false;
         }
     }
@@ -213,17 +220,14 @@ Point RRTstar::get_random_point() {
     return {x, y};
 }
 
-Point RRTstar::find_closest(Point pos){
-
+Point RRTstar::find_closest(Point pos) {
     float min_dist = std::numeric_limits<float>::infinity();
     Point closest;
 
-    for(auto& [key, value]: parent_)
-    {
+    for (auto& [key, value] : parent_) {
         double dist = std::sqrt(std::pow((pos.x - key.x), 2) + std::pow((pos.y, key.y), 2));
 
-        if(dist < min_dist)
-        {
+        if (dist < min_dist) {
             min_dist = dist;
             closest = key;
         }
@@ -232,8 +236,7 @@ Point RRTstar::find_closest(Point pos){
     return closest;
 }
 
-Point RRTstar::new_point(Point pt, Point closest){
-
+Point RRTstar::new_point(Point pt, Point closest) {
     double step = 0.1;
 
     double norm = std::hypot(pt.x - closest.x, pt.y - closest.y);
@@ -244,7 +247,6 @@ Point RRTstar::new_point(Point pt, Point closest){
 
     return point;
 }
-
 
 std::vector<float> RRTstar::linspace(float start, float stop, std::size_t num_of_points) {
     std::vector<float> linspaced{};
@@ -271,7 +273,7 @@ double RRTstar::calc_cost(Point start_pt, Point point) {
     std::vector<Point> path;
     path.push_back(point);
 
-    while(path.back() != start_pt){
+    while (path.back() != start_pt) {
         path.push_back(*parent_[path.back()]);
     }
 
